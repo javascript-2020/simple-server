@@ -15,7 +15,9 @@ or use the page, https://localhost:3001/hello
 the file has embedded the server key and cert and the ca cert - valid until 2049 - for convienience
 
 ## installing
-if you add a path environment variable to the file location it will serve the current directory
+if you add a path environment variable to the .bat file location it will serve the current directory
+
+c:\tst\www>simple-server
 
 
 
