@@ -81,6 +81,7 @@
 
               if(!fs.existsSync(file)){
                                                               console.log('404,',req.url);
+                    res.removeHeader('content-disposition');                                                              
                     res.writeHead(404);
                     res.end(req.url+' not found');
                     return;
