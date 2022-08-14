@@ -1,19 +1,4 @@
 
-
-
-/*
-
-servers/simple-server/min/simple-server-min.js
-
-simple-server-min:d
-
-21-01-22
-11-08-22    v1.1
-14-08-22    min
-
-
-*/
-
   
         var scheme            = 'https';
         var port              = 3001;
