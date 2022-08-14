@@ -28,7 +28,7 @@ simple-server-min:d
         var path              = require('path');
 
         var fsroot            = 'c:/';
-        var rootdir           = fsroot+'selfedits.dev.internetservicesltd.co.uk/www/';
+        var rootdir           = fsroot+'www/';
         var cacert            = rootdir+'ca/root-ca/certs/root-ca.cert.pem';
 
 
