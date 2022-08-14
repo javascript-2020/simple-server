@@ -48,7 +48,7 @@
         function hello(req,res){
                                                                           
               res.setHeader('content-type','text/html');
-              res.end(hellohtml);
+              res.end(html.hello);
         
         }//hello
 
@@ -293,7 +293,9 @@ KcW4i/Y+AMJCHEjy+Mj/
 `;
 
 
-var hellohtml    = `
+var html    = {};
+
+html.hello    = `
 <h3>Hello</h3>
 <input value='file upload' type='button' />
 <script>
