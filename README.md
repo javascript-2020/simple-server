@@ -1,5 +1,5 @@
 # simple-server
-a simple http server
+a simple http server - no dependencies
 
 designed for personal use and to be as simple as possible - dont push it too hard
 
