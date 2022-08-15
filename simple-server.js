@@ -21,18 +21,8 @@
 
 
   
-        function router(req,res,url){
-        
-              var file    = path.resolve(docroot,url);
-              
-              var n       = docroot.length;
-              var s       = file.substring(0,n);
-              
-              if(path.resolve(s)!==path.resolve(docroot)){
-                    return false;
-              }
-                    
-              
+        function router(req,res,url,file){
+                      
               switch(url){
 
 
@@ -45,7 +35,6 @@
 
 
               }//switch
-
 
               return file;
               
@@ -76,18 +65,27 @@
               
               if(url.startsWith('download:')){
                     url         = url.slice(9);
+                    var fn      = path.basename(url);
+                    res.setHeader('content-disposition',`attachment; filename="${fn}"`);
                     download    = true;
               }
 
+
+              var file    = path.resolve(docroot,url);
               
-              var file    = router(req,res,url);
+              var n       = docroot.length;
+              var s       = file.substring(0,n);
               
-              if(file===false){
+              if(path.resolve(s)!==path.resolve(docroot)){
                                                                   console.log('404,',req.url);
+                    res.removeHeader('content-disposition');
                     res.writeHead(404);
                     res.end(req.url+' bad url');
                     return;
               }
+                    
+
+              file    = router(req,res,url,file);
               
               if(!file){
                                                                   console.log('200,',req.url);
@@ -108,27 +106,25 @@
                     return;
               }
 
+
               if(!fs.existsSync(file)){
                                                                   console.log('404,',req.url);
+                    res.removeHeader('content-disposition');
                     res.writeHead(404);
                     res.end(req.url+' not found');
                     return;
               }
                                                                   console.log('200,',req.url);
-
-              if(download){
-                    var fn    = path.basename(url);
-                    res.setHeader('content-disposition',`attachment; filename="${fn}"`);
+              
+              if(!download){
+                    var ext   = path.extname(file);
+                    
+                    switch(ext){
+                    
+                      case 'html'   : res.setHeader('content-type','text/html');    break;
+                      
+                    }//switch
               }
-              
-              
-              var ext   = path.extname(file);
-              
-              switch(ext){
-              
-                case 'html'   : res.setHeader('content-type','text/html');    break;
-                
-              }//switch
 
 
               stream    = fs.createReadStream(file);
