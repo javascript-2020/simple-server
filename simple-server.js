@@ -14,7 +14,7 @@
 
         var fsroot            = 'c:/';
         var rootdir           = fsroot+'www/';
-        var cacert            = rootdir+'ca/root-ca/certs/root-ca.cert.pem';
+        var rootca            = rootdir+'ca/root-ca/certs/root-ca.cert.pem';
 
 
         setTimeout(start,50);
@@ -26,14 +26,12 @@
               switch(url){
 
 
+                case 'root-ca'          : file    = rootca;                 break;
+
+
+                case 'ca-cert'          : res.end(cacert);                  return;
                 case 'hello'            : hello(req,res);                   return;
-
                 
-                case 'root-ca'          : file    = cacert;                 break;
-                  
-                case 'tst-ca'           : res.end(tstca);                   return;
-
-
               }//switch
 
               return file;
@@ -285,7 +283,7 @@ lL6itKCSei2lWVodvvO+BmkEqLqpGXrri5s=
 `;
 
 
-var tstca    = `
+var cacert    = `
 -----BEGIN CERTIFICATE-----
 MIIDOzCCAiOgAwIBAgIJAOpBqbMP/4GVMA0GCSqGSIb3DQEBCwUAMBYxFDASBgNV
 BAMMC3RzdC1yb290LWNhMB4XDTIyMDgxNDA5MjgwNFoXDTQ5MTIzMDA5MjgwNFow
