@@ -23,9 +23,16 @@
   
         function router(req,res,url){
         
-              var file    = docroot+url;
-
-
+              var file    = path.resolve(docroot,url);
+              
+              var n       = docroot.length;
+              var s       = file.substring(0,n);
+              
+              if(path.resolve(s)!==path.resolve(docroot)){
+                    return false;
+              }
+                    
+              
               switch(url){
 
 
@@ -57,45 +64,74 @@
 
               res.setHeader('cache-control','no-store');
 
+              var url           = req.url.slice(1);
               
-              var url   = req.url.slice(1);
+              var upload        = false;
+              var download      = false;
 
               if(url.startsWith('upload:')){
-                    upload(req,res);
-                    return;
+                    url         = url.slice(7);
+                    upload      = true;
               }
               
               if(url.startsWith('download:')){
-                    url       = url.slice(9);
-                    var fn    = path.basename(url);
-                    res.setHeader('content-disposition',`attachment; filename="${fn}"`);
+                    url         = url.slice(9);
+                    download    = true;
               }
 
               
               var file    = router(req,res,url);
               
+              if(file===false){
+                                                                  console.log('404,',req.url);
+                    res.writeHead(404);
+                    res.end(req.url+' bad url');
+                    return;
+              }
+              
               if(!file){
-                                                              console.log('200,',req.url);
+                                                                  console.log('200,',req.url);
+                    return;
+              }
+              
+              var stream;
+              
+              if(upload){
+                    stream    = fs.createWriteStream(file);
+                    req.pipe(stream);
+                    req.on('end',()=>{
+                                                                  console.log('200,',req.url);
+                          res.end('ok');
+                          stream.close();
+                          
+                    })//end              
                     return;
               }
 
               if(!fs.existsSync(file)){
-                                                              console.log('404,',req.url);
-                    res.removeHeader('content-disposition');                                                              
+                                                                  console.log('404,',req.url);
                     res.writeHead(404);
                     res.end(req.url+' not found');
                     return;
               }
-                                                              console.log('200,',req.url);
+                                                                  console.log('200,',req.url);
 
+              if(download){
+                    var fn    = path.basename(url);
+                    res.setHeader('content-disposition',`attachment; filename="${fn}"`);
+              }
+              
+              
               var ext   = path.extname(file);
               
-              if(ext==='html'){
-                    res.setHeader('content-type','text/html');
-              }
+              switch(ext){
+              
+                case 'html'   : res.setHeader('content-type','text/html');    break;
+                
+              }//switch
 
 
-              var stream    = fs.createReadStream(file);
+              stream    = fs.createReadStream(file);
               stream.pipe(res);
               
         }//request
@@ -131,19 +167,6 @@
         }//start
         
         
-        function upload(req,res){
-        
-              var fn        = req.url.slice(8);
-              var stream    = fs.createWriteStream(fn);
-              req.pipe(stream);
-              req.on('end',()=>{
-                                                            console.log('200,',req.url);
-                    res.end('ok');
-                    stream.close();
-                    
-              })//end              
-              
-        }//upload
 
 
 
