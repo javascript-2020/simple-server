@@ -116,15 +116,13 @@
               }
                                                                   console.log('200,',req.url);
               
-              if(!download){
-                    var ext   = path.extname(file);
-                    
-                    switch(ext){
-                    
-                      case 'html'   : res.setHeader('content-type','text/html');    break;
-                      
-                    }//switch
-              }
+              var ext   = path.extname(file);
+              
+              switch(ext){
+              
+                case 'html'   : res.setHeader('content-type','text/html');    break;
+                
+              }//switch
 
 
               stream    = fs.createReadStream(file);
