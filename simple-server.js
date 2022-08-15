@@ -56,7 +56,6 @@
               var url           = req.url.slice(1);
               
               var upload        = false;
-              var download      = false;
 
               if(url.startsWith('upload:')){
                     url         = url.slice(7);
@@ -67,7 +66,6 @@
                     url         = url.slice(9);
                     var fn      = path.basename(url);
                     res.setHeader('content-disposition',`attachment; filename="${fn}"`);
-                    download    = true;
               }
 
 
