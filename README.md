@@ -1,7 +1,7 @@
 # simple-server
 a simple nodejs http/s server - no dependencies
 
-designed for personal use and to be as simple as possible --- dont push it too hard
+designed for **personal use** and to be as simple as possible --- dont push it too hard
 
 ## file download
 to download a file prefix download: to the file path, https://localhost:3001/download:tst-ca
