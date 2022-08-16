@@ -1,4 +1,13 @@
 
+
+/*
+
+simple-server.js
+
+16-08-22
+
+
+*/
   
         var scheme            = 'https';
         var port              = 3001;
@@ -19,40 +28,35 @@
 
         setTimeout(start,50);
 
-
   
         function router(req,res,url,file){
                       
               switch(url){
 
 
-                case 'root-ca'          : file    = rootca;                 break;
+                case 'root-ca'          : file    = rootca;                             break;
 
 
-                case 'ca-cert'          : res.end(cacert);                  return;
-                case 'hello'            : hello(req,res);                   return;
+                case 'ca-cert'          : res.end(cacert);                              return;
                 
+                case 'hello'            : res.setHeader('content-type','text/html');    
+                                          res.end(html.hello);                          return;
+                                          
               }//switch
+
 
               return file;
               
         }//router
 
 
-        function hello(req,res){
-                                                                          
-              res.setHeader('content-type','text/html');
-              res.end(html.hello);
-        
-        }//hello
-
-
         function request(req,res){
+
 
               res.setHeader('cache-control','no-store');
 
-              var url           = req.url.slice(1);
-              
+
+              var url           = req.url.slice(1);              
               var upload        = false;
 
               if(url.startsWith('upload:')){
@@ -87,6 +91,7 @@
                                                                   console.log('200,',req.url);
                     return;
               }
+
               
               var stream;
               
@@ -98,7 +103,7 @@
                           res.end('ok');
                           stream.close();
                           
-                    })//end              
+                    });//end              
                     return;
               }
 
@@ -116,13 +121,14 @@
               
               switch(ext){
               
-                case 'html'   : res.setHeader('content-type','text/html');    break;
+                case 'html'   : res.setHeader('content-type','text/html');      break;
                 
               }//switch
 
 
               stream    = fs.createReadStream(file);
               stream.pipe(res);
+
               
         }//request
 
@@ -155,9 +161,6 @@
               }//listening
 
         }//start
-        
-        
-
 
 
         
@@ -345,13 +348,3 @@ html.hello    = `
 `;
 
 
-
-
-        
-        
-        
-        
-        
-        
-              
-              
