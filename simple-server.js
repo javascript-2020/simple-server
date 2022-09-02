@@ -54,7 +54,7 @@ https://javascript.plainenglish.io/parsing-post-data-3-different-ways-in-node-js
                     
                     for(item of files[name]){
               
-                          file.write(item.filename,item.value);
+                          fn.write(item.filename,item.value);
                           
                           user[name].push({filename:item.filename,value:item.value.length});
                           
@@ -104,10 +104,23 @@ https://javascript.plainenglish.io/parsing-post-data-3-different-ways-in-node-js
   //:-
   
   
-        function router(req,res,url,fullfile){
+        function router(req,res,url,file){    //c
 
-                      
+
+              if(url.startsWith('download:')){
+                    fn.download(req,res,url,file);
+                    return;
+              }
+              
+              if(url.startsWith('upload:')){
+                    fn.upload(req,res,url,file);
+                    return;
+              }
+
+              
               switch(url){
+
+
 
 
                 case 'test-multipartformdata'                   : test.multipartformdata(req,res);
@@ -126,7 +139,8 @@ https://javascript.plainenglish.io/parsing-post-data-3-different-ways-in-node-js
               }//switch
 
 
-              return fullfile;
+              return file;
+
               
         }//router
 
@@ -138,27 +152,25 @@ https://javascript.plainenglish.io/parsing-post-data-3-different-ways-in-node-js
 
               res.setHeader('cache-control','no-store');
 
-              var url         = req.url.slice(1);
+              var url     = req.url.slice(1);
               
-              var fullfile    = path.resolve(docroot,url);
-              var s           = fullfile.substring(0,docroot.length);
+              var file    = fn.resolve(url);
               
-              if(path.resolve(s)!==path.resolve(docroot)){
-                                                                  console.log('404 (bad url),',req.url);
-                    res.writeHead(404);
-                    res.end(req.url+' bad url');
+              if(!file){              
+                    send.badurl(req,res);
                     return;
               }
                     
 
-              fullfile    = router(req,res,url,fullfile);
+              file    = router(req,res,url,file);
               
-              if(!fullfile){
+              if(!file){
                                                                   console.log('200 (routed),',req.url);
                     return;
               }
 
-              if(file.notfound(req,res,fullfile)){
+              if(fn.notfound(req,res,file)){
+                    send.notfound(req,res);
                     return;
               }
               
@@ -166,7 +178,7 @@ https://javascript.plainenglish.io/parsing-post-data-3-different-ways-in-node-js
                                                                   
               if(!res.hasHeader('content-type')){
               
-                    var ext   = path.extname(fullfile);
+                    var ext   = path.extname(file);
                     
                     switch(ext){
                     
@@ -176,7 +188,7 @@ https://javascript.plainenglish.io/parsing-post-data-3-different-ways-in-node-js
               }
 
 
-              var stream    = fs.createReadStream(fullfile);
+              var stream    = fs.createReadStream(file);
               stream.pipe(res);
               
         }//request
@@ -212,6 +224,25 @@ https://javascript.plainenglish.io/parsing-post-data-3-different-ways-in-node-js
         }//complete
 
 
+  //send:
+  
+        var send    = {};
+        
+        send.notfound=function(req,res){
+                                                                  console.log('404,',req.url);
+              res.writeHead(404);
+              res.end(req.url+' not found');
+        
+        }//notfound
+        
+        send.badurl=function(req,res){
+                                                                  console.log('404 (bad url),',req.url);
+              res.writeHead(404);
+              res.end(req.url+' bad url');
+        
+        }//badurl
+        
+        
   //server:
 
         var server    = {};
@@ -247,7 +278,6 @@ https://javascript.plainenglish.io/parsing-post-data-3-different-ways-in-node-js
 
         server.on.listening=function(){
                                 
-              console.log(`   server ...... :  ${__filename}, process : `+process.pid);
               console.log(`   listening ... :  ${scheme}, ${interface||'all interfaces'}, port ${port}`);
               console.log('   serving ..... :  '+docroot);
               console.log('   url ......... :  '+serverurl+'hello');
@@ -459,46 +489,80 @@ https://javascript.plainenglish.io/parsing-post-data-3-different-ways-in-node-js
         }//block
         
         
-  //file:
+  //fn:
   
-        var file   = {};
+        var fn   = {};
         
-        file.notfound=function(req,res,file){
+        fn.resolve=function(url){
         
-              if(fs.existsSync(file)){
+              var file    = path.resolve(docroot,url);
+              var s       = file.substring(0,docroot.length);
+              
+              if(path.resolve(s)!==path.resolve(docroot)){
+                    return false;
+              }
+              
+              return file;
+        
+        }//resolve
+        
+        fn.notfound=function(file,isfile){
+        
+              if(!fs.existsSync(file)){
+                    return true;
+              }
+              
+              if(isfile!==false){
                     if(fs.statSync(file).isFile()){
                           return false;
                     }
               }
-                                                                  console.log('404,',req.url);
-              res.writeHead(404);
-              res.end(req.url+' not found');
               
               return true;
               
         }//notfound
 
         
-        file.write=function(filename,data){
+        fn.write=function(file,data){
         
-              var stream    = fs.createWriteStream(filename)
+              var stream    = fs.createWriteStream(file)
               stream.write(data,'binary')
               stream.close();
         
         }//writefile
         
-        file.upload=function(req,filename){
+        fn.upload=function(req,res,url){
         
-              var stream    = fs.createWriteStream(filename);
+              url           = url.slice(7);
+              var file      = fn.resolve(url);
+              
+              if(!file){
+                    send.badurl(req,res);
+                    return;
+              }
+              
+              var stream    = fs.createWriteStream(file);
               req.pipe(stream);
               
         }//upload
         
-        file.download=function(res,filename){
+        fn.download=function(res,res,filename){
         
-              var fn    = path.basename(filename);
-              res.setHeader('content-disposition',`attachment; filename="${fn}"`);
+              url         = url.slice(9);
+              var file    = fn.resolve(url);
               
+              if(!file){
+                    send.badurl(req,res);
+                    return;
+              }
+              
+              if(fn.notfound(file)){
+                    send.notfound(req,res);
+                    return;
+              }
+              
+              var fn        = path.basename(file);
+              res.setHeader('content-disposition',`attachment; filename="${fn}"`);
               var stream    = fs.createReadStream(filename);
               stream.pipe(res);
               
