@@ -2,168 +2,646 @@
 
 /*
 
-simple-server.js
+simple-server-min:d
 
 16-08-22
 
 
+
+https://javascript.plainenglish.io/parsing-post-data-3-different-ways-in-node-js-e39d9d11ba8
+
+
+
 */
+
   
         var scheme            = 'https';
         var port              = 3001;
         var interface         = '';
 
         var docroot           = process.cwd()+'/';
+        
+        var display           = true;
 
         var host              = interface||'localhost';
         var serverurl         = `${scheme}://${host}:${port}/`;
 
+
         var fs                = require('fs');
         var path              = require('path');
-
-        var fsroot            = 'c:/';
-        var rootdir           = fsroot+'www/';
-        var rootca            = rootdir+'ca/root-ca/certs/root-ca.cert.pem';
+        var querystring       = require('querystring');
 
 
-        setTimeout(start,50);
+        setTimeout(_=>server.start(),50);
 
+
+  //:
   
-        function router(req,res,url,file){
+        var test    = {};
+        
+        test.multipartformdata=async function(req,res){
+        
+              var result    = await parse.request(req);
+              
+              var json      = result.json;
+              var files     = result.files;
+
+              var user      = {};
+              
+              for(var name in files){
+              
+                    user[name]    = [];
+                    
+                    for(item of files[name]){
+              
+                          file.write(item.filename,item.value);
+                          
+                          user[name].push({filename:item.filename,value:item.value.length});
+                          
+                    }//for
+                    
+              }//for
+
+              
+              var html      = `
+                    <h3>
+                    <h4>json</h4>
+                    <pre>${JSON.stringify(json,null,4)}</pre>
+                    <h4>files</h4>
+                    <pre>${JSON.stringify(user,null,4)}</pre>
+              `;
+
+              res.setHeader('content-type','text/html');
+              res.end(html);
+
+        }//multipartformdata
+
+        
+        test.applicationjson=async function(req,res){
+        
+              var json    = await parse.request(req);
+              var str     = JSON.stringify(json,null,4);
+              res.end(str);
+              
+        }//applicationjson
+
+        
+        test.urlencoded=async function(req,res){
+        
+              var json    = await parse.request(req);
+              
+              res.setHeader('content-type','text/html');
+              
+              var html    = `
+                    <h3>application/x-www-form-urlencoded</h3>
+                    <pre>${JSON.stringify(json,null,4)}</pre>
+              `;
+              res.end(html);
+              
+        }//urlencoded
+        
+
+  //:-
+  
+  
+        function router(req,res,url,fullfile){
+
                       
               switch(url){
 
 
-                case 'root-ca'          : file    = rootca;                             break;
-
-
-                case 'ca-cert'          : res.end(cacert);                              return;
+                case 'test-multipartformdata'                   : test.multipartformdata(req,res);
+                                                                  return;
+                                                  
+                case 'test-applicationjson'                     : test.applicationjson(req,res);
+                                                                  return;
                 
-                case 'hello'            : res.setHeader('content-type','text/html');    
-                                          res.end(html.hello);                          return;
+                case 'test-urlencoded'                          : test.urlencoded(req,res);
+                                                                  return;
                                           
+                                          
+                case 'hello'                                    : res.setHeader('content-type','text/html');    
+                                                                  res.end(html.hello);
+                                                                  return;
               }//switch
 
 
-              return file;
+              return fullfile;
               
         }//router
 
 
-        function request(req,res){
 
+  //request:
+
+        function request(req,res){
 
               res.setHeader('cache-control','no-store');
 
-
-              var url           = req.url.slice(1);              
-              var upload        = false;
-
-              if(url.startsWith('upload:')){
-                    url         = url.slice(7);
-                    upload      = true;
-              }
+              var url         = req.url.slice(1);
               
-              if(url.startsWith('download:')){
-                    url         = url.slice(9);
-                    var fn      = path.basename(url);
-                    res.setHeader('content-disposition',`attachment; filename="${fn}"`);
-              }
-
-
-              var file    = path.resolve(docroot,url);
-              
-              var n       = docroot.length;
-              var s       = file.substring(0,n);
+              var fullfile    = path.resolve(docroot,url);
+              var s           = fullfile.substring(0,docroot.length);
               
               if(path.resolve(s)!==path.resolve(docroot)){
-                                                                  console.log('404,',req.url);
-                    res.removeHeader('content-disposition');
+                                                                  console.log('404 (bad url),',req.url);
                     res.writeHead(404);
                     res.end(req.url+' bad url');
                     return;
               }
                     
 
-              file    = router(req,res,url,file);
+              fullfile    = router(req,res,url,fullfile);
               
-              if(!file){
-                                                                  console.log('200,',req.url);
+              if(!fullfile){
+                                                                  console.log('200 (routed),',req.url);
                     return;
               }
 
-              
-              var stream;
-              
-              if(upload){
-                    stream    = fs.createWriteStream(file);
-                    req.pipe(stream);
-                    req.on('end',()=>{
-                                                                  console.log('200,',req.url);
-                          res.end('ok');
-                          stream.close();
-                          
-                    });//end              
+              if(file.notfound(req,res,fullfile)){
                     return;
+              }
+              
+                                                                  console.log('200,',req.url);
+                                                                  
+              if(!res.hasHeader('content-type')){
+              
+                    var ext   = path.extname(fullfile);
+                    
+                    switch(ext){
+                    
+                      case 'html'   : res.setHeader('content-type','text/html');      break;
+                      
+                    }//switch
               }
 
 
-              if(!fs.existsSync(file)){
-                                                                  console.log('404,',req.url);
-                    res.removeHeader('content-disposition');
-                    res.writeHead(404);
-                    res.end(req.url+' not found');
-                    return;
-              }
-                                                                  console.log('200,',req.url);
-              
-              var ext   = path.extname(file);
-              
-              switch(ext){
-              
-                case 'html'   : res.setHeader('content-type','text/html');      break;
-                
-              }//switch
-
-
-              stream    = fs.createReadStream(file);
+              var stream    = fs.createReadStream(fullfile);
               stream.pipe(res);
-
               
         }//request
 
 
-        function start(){
-      
-              var server;
-      
+        request.complete=function(req,res){
+
+              console.log('    ---   request   ---');
+              /*
+              mem.req(req.socket).split('\n').forEach(
+                    s=>console.log('   |  '+s)
+              );
+              */
+              console.log(mem.req(req.socket));
+              
+              console.log('    ---');
+              console.log();
+              console.log('    ---   response   ---');
+              /*
+              mem.req(req.socket).split('\n').forEach(
+                    s=>console.log('   |  '+s)
+              );
+              */
+              
+              console.log(mem.res(req.socket));
+              
+              console.log('    ---');
+              console.log();
+              
+              mem.rem(req.socket);
+              req.socket.destroy();
+              
+        }//complete
+
+
+  //server:
+
+        var server    = {};
+        server.on     = {};
+        
+                
+        server.start=function(){
+        
               if(scheme==='http'){
-                    var http    = require('http');
-                    server      = http.createServer(request);
+                    var http        = require('http');
+                    server.server   = http.createServer(server.on.request);
+                    
+                    if(display){
+                          server.server.on('connection',server.on.connection);
+                    }
               }
               
               if(scheme==='https'){
-                    var https   = require('https');
-                    server      = https.createServer({key,cert},request);
+                    var https       = require('https');
+                    server.server   = https.createServer({key,cert},server.on.request);
+                    
+                    if(display){
+                          server.server.on('secureConnection',server.on.connection);
+                    }
               }
                             
-              server.on('listening',listening);
+              server.server.on('listening',server.on.listening);
               
-              server.listen(port,interface);
-
-
-              function listening(){
-                                
-                    console.log(`listening ... :  ${scheme}, ${interface||'all interfaces'}, port ${port}`);
-                    console.log('serving ..... :  '+docroot);
-                    console.log('url ......... :  '+serverurl+'hello');
-                    
-              }//listening
+              server.server.listen(port,interface);
 
         }//start
 
 
+        server.on.listening=function(){
+                                
+              console.log(`   server ...... :  ${__filename}, process : `+process.pid);
+              console.log(`   listening ... :  ${scheme}, ${interface||'all interfaces'}, port ${port}`);
+              console.log('   serving ..... :  '+docroot);
+              console.log('   url ......... :  '+serverurl+'hello');
+              console.log();
+
+        }//listening
+
+              
+        server.on.connection=function(socket){
+                    
+              console.log('*** connection ***');
+              
+              if(mem.find.full(socket)!==null){
+                    console.error('socket found');
+                    return;
+              }
+              
+              var o   = mem.add(socket);
+              
+              socket.on('data',data=>{
+              
+                    o.req  += data.toString()
+                    
+              });
+              
+              var write   = socket.write;
+              
+              socket.write=function(data,encoding,callback){
+
+                    o.res  += data.toString();
+                    
+                    write.apply(socket,arguments);
+
+              };
+              
+        }//connection
+
+              
+        server.on.request=function(req,res){
+
+              if(display){
+                    res.on('finish',()=>request.complete(req,res));
+              }
+
+              request(req,res);              
+              
+        }//request
+                            
+                            
+  //parse:
+
+        var parse   = {};
         
+        parse.request=function(req,callback){
+
+              if(!callback){
+                    var promise   = new Promise((resolve,reject)=>callback=resolve);
+              }
+
+                    
+              var type   = req.headers['content-type'];
+              
+              if(type){
+                    if(type.startsWith('multipart/form-data')){
+                          req.setEncoding('latin1');
+                          type   = 'multipart/form-data';
+                    }
+              }
+              
+              var result  = {json:{},files:{}};
+              
+              var body    = '';                          
+              
+              req.on('data',data=>{
+              
+                    body   += data;
+                    
+                    if(type==='multipart/form-data'){
+                          ({result,body}    = parse.body(req,body,result));
+                    }
+                    
+              });
+
+              req.on('end',()=>{
+              
+                    switch(type){
+                    
+                      case 'multipart/form-data'                  :                                         break;
+                      case 'application/x-www-form-urlencoded'    : result    = querystring.parse(body);    break;
+                      case 'application/json'                     : result    = JSON.parse(body);           break;
+                      
+                      default                                     : result    = body; 
+                      
+                    }//switch
+                    
+                    callback(result);
+                    
+              });
+
+
+              return promise;
+        
+        }//request
+
+
+        parse.boundary=function(request){
+        
+              var type        = request.headers['content-type'];
+              
+              var arr         = type.split(';').map(item=>item.trim());
+              
+              var prefix      = 'boundary=';
+              var boundary    = arr.find(item=>item.startsWith(prefix));
+              
+              if(!boundary){
+                    return null;
+              }
+              
+              boundary        = boundary.slice(prefix.length).trim();
+              boundary        = '--'+boundary;
+              
+              return boundary
+              
+        }//boundary
+
+
+        parse.body=function(request,body,result){
+
+              var boundary    = parse.boundary(request);
+              var offset      = boundary.length+2;
+              
+              if(body.startsWith(boundary)){
+                    body    = body.slice(offset);
+              }
+              
+              var ec    = true;
+              
+              while(ec===true){
+              
+                    index   = body.indexOf(boundary);
+                    
+                    if(index===-1){
+                    
+                          ec    = false;
+                          
+                    }else{
+                    
+                          var block   = body.substring(0,index);
+                          
+                          parse.block(block,result);
+
+                          body        = body.slice(index+offset);
+                          
+                    }
+                    
+              }//while
+
+              return {result,body};
+
+        }//body
+        
+
+        parse.block=function(block,result){
+        
+              var name;
+              var filename;
+              var contenttype;
+              var value;
+              var i1;
+              var i2;
+              
+              i1      = block.indexOf('name="');
+              if(i1===-1){
+                    return;
+              }
+              
+              i1     += 6;
+              i2      = block.indexOf('"',i1);
+              name    = block.substring(i1,i2);
+              
+              i1      = block.indexOf('filename="');
+              if(i1!==-1){
+                    i1           += 10;
+                    i2            = block.indexOf('"',i1);
+                    filename      = block.substring(i1,i2);
+                    
+                    i1            = block.indexOf('Content-Type');
+                    i2            = block.indexOf('\r\n',i1);
+                    contenttype   = block.substring(i1,i2);
+                    contenttype   = contenttype.split(':')[1].trim();
+              }
+              
+              var i1    = block.indexOf('\r\n\r\n');
+              value     = block.slice(i1+4,-2);
+              
+              
+              if(filename){
+              
+                    if(!result.files[name]){
+                          result.files[name]   = [];
+                    }
+              
+                    result.files[name].push({filename,value,contenttype});
+                    
+              }else{
+                    result.json[name]   = value;
+              }
+        
+        }//block
+        
+        
+  //file:
+  
+        var file   = {};
+        
+        file.notfound=function(req,res,file){
+        
+              if(fs.existsSync(file)){
+                    if(fs.statSync(file).isFile()){
+                          return false;
+                    }
+              }
+                                                                  console.log('404,',req.url);
+              res.writeHead(404);
+              res.end(req.url+' not found');
+              
+              return true;
+              
+        }//notfound
+
+        
+        file.write=function(filename,data){
+        
+              var stream    = fs.createWriteStream(filename)
+              stream.write(data,'binary')
+              stream.close();
+        
+        }//writefile
+        
+        file.upload=function(req,filename){
+        
+              var stream    = fs.createWriteStream(filename);
+              req.pipe(stream);
+              
+        }//upload
+        
+        file.download=function(res,filename){
+        
+              var fn    = path.basename(filename);
+              res.setHeader('content-disposition',`attachment; filename="${fn}"`);
+              
+              var stream    = fs.createReadStream(filename);
+              stream.pipe(res);
+              
+        }//downloadfile
+
+
+  //:
+  
+  
+        function reload(){
+        
+              server.server.close(complete);
+              
+              function complete(){
+              
+                    var js    = fs.readFileSync(__filename);
+                    var fn    = Function('require','__filename','__dirname',js);
+                    
+                    fn(require,__filename,__dirname);
+
+              }//complete2
+              
+        }//reload
+
+  
+
+  //keys:
+  
+;
+(function(){
+
+        if(!process.stdin.isTTY){
+              return;
+        }
+        
+        var ctrlc   = '\u0003';
+        var esc     = String.fromCharCode(27);
+        
+        process.stdout.setEncoding('utf8');
+        
+        process.stdin.setRawMode(true);
+        process.stdin.resume();
+        process.stdin.setEncoding('utf8');
+        process.stdin.on('data',keypressed);
+
+        function keypressed(key){
+        
+              if(key==='r'){
+                    process.stdin.off('data',keypressed);
+                    console.clear();
+                    console.log('reload');
+                    reload();
+              }
+              
+              if(
+                    (key===ctrlc)   ||
+                    (key==='q')     ||
+                    (key===esc)
+              ){
+                    process.exit();
+              }
+                            
+              if(key===' '){
+                    console.clear();
+                    console.log('---   clear   ---');
+              }
+              
+              if(key==='-'){
+                    console.log('---   ...    ---');
+              }
+
+        }//keypressed
+        
+})()//keys
+;
+
+
+  //mem:
+  
+        var mem   = [];
+        
+        mem.find=function(socket){
+        
+              for(var i=0;i<mem.length;i++)
+                    if(mem[i].socket===socket)
+                          return mem[i];
+              return null;
+              
+        }//find
+        
+        mem.add=function(socket){
+        
+              var o   = {socket,req:'',res:''};
+              mem.push(o);
+              return o;
+              
+        }//add
+        
+        mem.rem=function(socket){
+        
+              for(var i=0;i<mem.length;i++)
+                    if(mem[i].socket===socket){
+                          mem.splice(i,1);
+                          return;
+                    }
+                    
+        }//rem
+        
+        mem.req=function(socket){return mem.find(socket).req};
+        mem.res=function(socket){return mem.find(socket).res};
+              
+        mem.find.full=function(socket){
+        
+              for(var i=0;i<mem.length;i++){
+                    
+                    var msocket   = mem[i].socket;
+                    
+                    while(msocket){
+                    
+                          var tsocket   = socket;
+                          
+                          while(tsocket){
+                          
+                                if(tsocket===msocket){
+                                      return true;
+                                }
+                                
+                                tsocket   = tsocket.__proto__;
+                                
+                          }//while
+                          
+                          msocket   = msocket.__proto__;
+                          
+                    }//while
+                    
+              }//for
+              
+              return null;                    
+                    
+        }//find.full
+
+
+              
   //data:
 
 var key     = `
@@ -286,65 +764,131 @@ lL6itKCSei2lWVodvvO+BmkEqLqpGXrri5s=
 `;
 
 
-var cacert    = `
------BEGIN CERTIFICATE-----
-MIIDOzCCAiOgAwIBAgIJAOpBqbMP/4GVMA0GCSqGSIb3DQEBCwUAMBYxFDASBgNV
-BAMMC3RzdC1yb290LWNhMB4XDTIyMDgxNDA5MjgwNFoXDTQ5MTIzMDA5MjgwNFow
-FjEUMBIGA1UEAwwLdHN0LXJvb3QtY2EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAw
-ggEKAoIBAQCfdZdpipCK7gVxhhC4CvInK0n6Gf4MAJdkp3bqXXuMSIJsGrF9qbpY
-FYAdpptr7X+EwkQ80nQcudXMsbou0Yg/iUG0FYp0iy8F4Fo6JTTLQAJ2l3OWrDsJ
-Tp8w3HrKjPjzQUHc+NCv2RBIur+ViiF5Ur3qAvVygY3yyZWPzAHsZ+IckXtxvKZr
-046zTekLJaXPA/iR5funJEJelDGOMbR4gGc3LOJp4BtRFuUX0dUdjPYzVvdhz4JA
-H1+8bvY0qJCMlYFgRcPi6z47yU4ZgY0HTBtY0PqMX5HTskcvmavckPWFNigqS7zr
-CikE8gbiC0E+u5mVk1j6k4hrvnEE1JGdAgMBAAGjgYswgYgwDwYDVR0TAQH/BAUw
-AwEB/zAOBgNVHQ8BAf8EBAMCAYYwHQYDVR0OBBYEFEsNeiZreqGe65gZJ3dC0LvQ
-oVcWMEYGA1UdIwQ/MD2AFEsNeiZreqGe65gZJ3dC0LvQoVcWoRqkGDAWMRQwEgYD
-VQQDDAt0c3Qtcm9vdC1jYYIJAOpBqbMP/4GVMA0GCSqGSIb3DQEBCwUAA4IBAQCD
-GB8xbbozjvEij6DESLKougYHjG33lT79tegixXnh+fFwr374VTx+nEcmz8ha0cFA
-z0lig/8aOJm2vlB+iGY9/chztd91QL4/xiTIi4dYZFbQXXpsSwaIaEEDJ496p+Kx
-nlh4AgczG7Yxs1MPm7QiYdLpRD128x8B4gkOwe54D9yUch/PHkb5jkII7a1ctb9q
-ZzrfWtPiYt7x/DT1ljIYo2m4lLdns5CHkqHlDRjyaiV4kgi7EVlpIKvjZaNNpN1a
-0aKw0m5zG50jX44AtKttW/EybFj0KR9hHeaGvB9MFIz2ZiPM9OGek6NPrLr7tSjJ
-KcW4i/Y+AMJCHEjy+Mj/
------END CERTIFICATE-----
-`;
-
-
+  //html:
+  
 var html    = {};
 
 html.hello    = `
-<h3>Hello</h3>
-<input value='file upload' type='button' />
-<script>
+<head>
+  <style>
+    body {
+      margin:50px;
+      font-family:arial;
+    }
+    table {
+      text-align: left;
+      border-collapse: seperate;
+      border-spacing: 50px 10px;
+    }
+    .line {
+      height:2px;
+      background-color:lightblue;
+    }
+  </style>
+</head>
+<body>
 
-      document.body.querySelector('input').onclick    = click;
-      
-      function click(){
-      
-            var input         = document.createElement('input');
-            input.type        = 'file';
-            input.onchange    = upload;
-            input.click();
-            
-      }//click
-      
-      function upload(e){
-     
-            var file    = e.target.files[0];
+  <h1>Hello</h1>
+  
+  <table>
+    <tr>
+      <td>server url</td><td>${serverurl}</td>
+    </tr>
+    <tr>
+      <td>document root</td><td>${docroot}</td>
+    </tr>
+  </table>
+  
+  <br>
+  <div class='line'></div>
+  <br>
+  <br>
+  
+  <input id=test value=test type=button />
+  <br>
+  <br>
+  
+  <h3>application/x-www-form-urlencoded</h3>
+  
+  <form action="/test-urlencoded" method="post">
+    <input id="username1" type="text" name="username" placeholder="username"><br />
+    <input id="password1" type="password" name="password" placeholder="password"><br />
+    <input type="submit">
+  </form>
+  
+  <br>
 
-            var url     = '${serverurl}upload:'+file.name;
+  
+  <h3>application/json</h3>
+  
+  <form action="javascript:" onsubmit="submitform(this)">
+    <input id="username2" type="text" placeholder="username"><br />
+    <input id="password2" type="password" placeholder="password"><br />
+    <input type="submit">
+  </form>
+  <pre id='result'></pre>  
+  <br>
+
+  
+  <h3>multipart/form-data</h3>
+  
+  <form action="/test-multipartformdata" method="post" enctype="multipart/form-data">
+    <input id="username3" type="text" name="username" placeholder="username"><br />
+    <input id="password3" type="password" name="password" placeholder="password"><br />
+    <input id="picture3" type="file" name="picture" multiple><br />
+    <input type="submit">
+  </form>  
+  
+  <br>
+
+  <script>
+  
+    test.onclick=e=>{
+    
+          fetch('https://localhost:3001/test-1');
+          fetch('https://localhost:3001/test-2');
+          
+    }//onclick
+    
+    async function submitform(form){
+    
+          var username        = form['username2'].value;
+          var password        = form['password2'].value;
+          var body            = JSON.stringify({username,password});
+          
+          result.innerHTML    = '';
+          
+          var text;
+                
+          try{
+          
+                var url     = '/test-applicationjson';
+                var opts    = {
+                      headers   : {'content-type':'application/json'},
+                      method    : 'POST',
+                      body      : body
+                };
+                var response    = await fetch(url,opts);
+                text            = await response.text();
+                
+          }//try
+          
+          catch(err){
+
+                text    = err.toString();                
             
-            var opts    = {
-                method    : 'POST',
-                headers   : {'content-type':'multipart/form-data;'},
-                body      : file 
-            };
-            
-            fetch(url,opts);
-                  
-      }//upload
-                                
-</script>
+          }//catch
+          
+          result.innerHTML    = text;
+          
+    }//submitform
+    
+  </script>
+  
+</body>
 `;
+
+
+
 
 
