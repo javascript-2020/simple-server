@@ -4,13 +4,7 @@
 
 simple-server-min:d
 
-16-08-22
-
-
-
-https://javascript.plainenglish.io/parsing-post-data-3-different-ways-in-node-js-e39d9d11ba8
-
-
+03-09-22
 
 */
 
@@ -37,72 +31,7 @@ https://javascript.plainenglish.io/parsing-post-data-3-different-ways-in-node-js
 
   //:
   
-        var test    = {};
-        
-        test.multipartformdata=async function(req,res){
-        
-              var result    = await parse.request(req);
-              
-              var json      = result.json;
-              var files     = result.files;
 
-              var user      = {};
-              
-              for(var name in files){
-              
-                    user[name]    = [];
-                    
-                    for(item of files[name]){
-              
-                          fn.write(item.filename,item.value);
-                          
-                          user[name].push({filename:item.filename,value:item.value.length});
-                          
-                    }//for
-                    
-              }//for
-
-              
-              var html      = `
-                    <h3>
-                    <h4>json</h4>
-                    <pre>${JSON.stringify(json,null,4)}</pre>
-                    <h4>files</h4>
-                    <pre>${JSON.stringify(user,null,4)}</pre>
-              `;
-
-              res.setHeader('content-type','text/html');
-              res.end(html);
-
-        }//multipartformdata
-
-        
-        test.applicationjson=async function(req,res){
-        
-              var json    = await parse.request(req);
-              var str     = JSON.stringify(json,null,4);
-              res.end(str);
-              
-        }//applicationjson
-
-        
-        test.urlencoded=async function(req,res){
-        
-              var json    = await parse.request(req);
-              
-              res.setHeader('content-type','text/html');
-              
-              var html    = `
-                    <h3>application/x-www-form-urlencoded</h3>
-                    <pre>${JSON.stringify(json,null,4)}</pre>
-              `;
-              res.end(html);
-              
-        }//urlencoded
-        
-
-  //:-
-  
   
         function router(req,res,url,file){    //c
 
@@ -174,8 +103,7 @@ https://javascript.plainenglish.io/parsing-post-data-3-different-ways-in-node-js
                     return;
               }
               
-                                                                  console.log('200,',req.url);
-                                                                  
+                                                                  console.log('200,',req.url);                                                                  
               if(!res.hasHeader('content-type')){
               
                     var ext   = path.extname(file);
@@ -222,25 +150,6 @@ https://javascript.plainenglish.io/parsing-post-data-3-different-ways-in-node-js
               req.socket.destroy();
               
         }//complete
-
-
-  //send:
-  
-        var send    = {};
-        
-        send.notfound=function(req,res){
-                                                                  console.log('404,',req.url);
-              res.writeHead(404);
-              res.end(req.url+' not found');
-        
-        }//notfound
-        
-        send.badurl=function(req,res){
-                                                                  console.log('404 (bad url),',req.url);
-              res.writeHead(404);
-              res.end(req.url+' bad url');
-        
-        }//badurl
         
         
   //server:
@@ -277,20 +186,19 @@ https://javascript.plainenglish.io/parsing-post-data-3-different-ways-in-node-js
 
 
         server.on.listening=function(){
-                                
-              console.log(`   listening ... :  ${scheme}, ${interface||'all interfaces'}, port ${port}`);
-              console.log('   serving ..... :  '+docroot);
-              console.log('   url ......... :  '+serverurl+'hello');
+                        
+              console.log(`   server ...... :  ${serverfile} , process : ${process.pid}`);
+              console.log(`   listening ... :  ${scheme} ,  ${interface||'all interfaces'}, port ${port}`);
+              console.log(`   serving ..... :  ${docroot}`);
+              console.log(`   url ......... :  ${serverurl}hello`);
               console.log();
 
         }//listening
 
               
         server.on.connection=function(socket){
-                    
-              console.log('*** connection ***');
-              
-              if(mem.find.full(socket)!==null){
+                                                                console.log('*** connection ***');
+              if(mem.find(socket)!==null){
                     console.error('socket found');
                     return;
               }
@@ -299,7 +207,7 @@ https://javascript.plainenglish.io/parsing-post-data-3-different-ways-in-node-js
               
               socket.on('data',data=>{
               
-                    o.req  += data.toString()
+                    o.req  += data.toString();
                     
               });
               
@@ -308,7 +216,6 @@ https://javascript.plainenglish.io/parsing-post-data-3-different-ways-in-node-js
               socket.write=function(data,encoding,callback){
 
                     o.res  += data.toString();
-                    
                     write.apply(socket,arguments);
 
               };
@@ -325,8 +232,27 @@ https://javascript.plainenglish.io/parsing-post-data-3-different-ways-in-node-js
               request(req,res);              
               
         }//request
+
                             
-                            
+  //send:
+  
+        var send    = {};
+        
+        send.notfound=function(req,res){
+                                                                  console.log('404,',req.url);
+              res.writeHead(404);
+              res.end(req.url+' not found');
+        
+        }//notfound
+        
+        send.badurl=function(req,res){
+                                                                  console.log('404 (bad url),',req.url);
+              res.writeHead(404);
+              res.end(req.url+' bad url');
+        
+        }//badurl
+
+
   //parse:
 
         var parse   = {};
@@ -674,39 +600,8 @@ https://javascript.plainenglish.io/parsing-post-data-3-different-ways-in-node-js
         mem.req=function(socket){return mem.find(socket).req};
         mem.res=function(socket){return mem.find(socket).res};
               
-        mem.find.full=function(socket){
-        
-              for(var i=0;i<mem.length;i++){
-                    
-                    var msocket   = mem[i].socket;
-                    
-                    while(msocket){
-                    
-                          var tsocket   = socket;
-                          
-                          while(tsocket){
-                          
-                                if(tsocket===msocket){
-                                      return true;
-                                }
-                                
-                                tsocket   = tsocket.__proto__;
-                                
-                          }//while
-                          
-                          msocket   = msocket.__proto__;
-                          
-                    }//while
-                    
-              }//for
               
-              return null;                    
-                    
-        }//find.full
-
-
-              
-  //data:
+  //cert:
 
 var key     = `
 -----BEGIN RSA PRIVATE KEY-----
@@ -953,6 +848,70 @@ html.hello    = `
 `;
 
 
+  
+        var test    = {};
+        
+        test.multipartformdata=async function(req,res){
+        
+              var result    = await parse.request(req);
+              
+              var json      = result.json;
+              var files     = result.files;
+
+              var user      = {};
+              
+              for(var name in files){
+              
+                    user[name]    = [];
+                    
+                    for(item of files[name]){
+              
+                          fn.write(item.filename,item.value);
+                          
+                          user[name].push({filename:item.filename,value:item.value.length});
+                          
+                    }//for
+                    
+              }//for
+
+              
+              var html      = `
+                    <h3>
+                    <h4>json</h4>
+                    <pre>${JSON.stringify(json,null,4)}</pre>
+                    <h4>files</h4>
+                    <pre>${JSON.stringify(user,null,4)}</pre>
+              `;
+
+              res.setHeader('content-type','text/html');
+              res.end(html);
+
+        }//multipartformdata
+
+        
+        test.applicationjson=async function(req,res){
+        
+              var json    = await parse.request(req);
+              var str     = JSON.stringify(json,null,4);
+              res.end(str);
+              
+        }//applicationjson
+
+        
+        test.urlencoded=async function(req,res){
+        
+              var json    = await parse.request(req);
+              
+              res.setHeader('content-type','text/html');
+              
+              var html    = `
+                    <h3>application/x-www-form-urlencoded</h3>
+                    <pre>${JSON.stringify(json,null,4)}</pre>
+              `;
+              res.end(html);
+              
+        }//urlencoded
+        
 
 
 
