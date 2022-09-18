@@ -1,6 +1,8 @@
 # simple-server
 a simple nodejs http/s server - no dependencies
 
+note: as of 18-09-22 , under development - expect changes
+
 designed for **personal use** and to be as simple as possible --- dont push it too hard
 
 ## file download
@@ -20,5 +22,8 @@ if you append to the path environment variable the .bat file location, it will s
 c:\tst\www>simple-server
 
 
+
+
+...   testing   ...
 
 
