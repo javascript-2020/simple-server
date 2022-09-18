@@ -1,4 +1,5 @@
 echo off
-title simple-server
-node %~dp0simple-server %*
-cmd /k
+set ver=v2.0
+title simple-server %ver%
+cls
+node %~dp0%ver%/simple-server-%ver% %*
